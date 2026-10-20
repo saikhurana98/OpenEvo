@@ -1,0 +1,149 @@
+{
+  "cases": [
+    {
+      "authoritative": 10.0,
+      "control": 0,
+      "observed": 10.0,
+      "phase": 0,
+      "prior": 10.0,
+      "requested": 11.0
+    },
+    {
+      "authoritative": 17.0,
+      "control": 0,
+      "observed": 17.0,
+      "phase": 1,
+      "prior": 10.0,
+      "requested": 12.0
+    },
+    {
+      "authoritative": 12.0,
+      "control": 1,
+      "observed": 12.0,
+      "phase": 0,
+      "prior": 12.0,
+      "requested": 13.0
+    },
+    {
+      "authoritative": 19.0,
+      "control": 1,
+      "observed": 19.0,
+      "phase": 1,
+      "prior": 12.0,
+      "requested": 14.0
+    },
+    {
+      "authoritative": -20.0,
+      "control": 2,
+      "observed": -20.0,
+      "phase": 0,
+      "prior": -20.0,
+      "requested": -21.0
+    },
+    {
+      "authoritative": -35.0,
+      "control": 2,
+      "observed": -35.0,
+      "phase": 1,
+      "prior": -20.0,
+      "requested": -22.0
+    },
+    {
+      "authoritative": 50.0,
+      "control": 3,
+      "observed": 50.0,
+      "phase": 0,
+      "prior": 50.0,
+      "requested": 51.0
+    },
+    {
+      "authoritative": 65.0,
+      "control": 3,
+      "observed": 65.0,
+      "phase": 1,
+      "prior": 50.0,
+      "requested": 52.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 4,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 5.0
+    },
+    {
+      "authoritative": 25.0,
+      "control": 4,
+      "observed": 25.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 6.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 5,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -1.0
+    },
+    {
+      "authoritative": -25.0,
+      "control": 5,
+      "observed": -25.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -2.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 6,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 5.0
+    },
+    {
+      "authoritative": 30.0,
+      "control": 6,
+      "observed": 30.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 6.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 15,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -1.0
+    },
+    {
+      "authoritative": -20.0,
+      "control": 15,
+      "observed": -20.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -2.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 16,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 5.0
+    },
+    {
+      "authoritative": 35.0,
+      "control": 16,
+      "observed": 35.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 6.0
+    }
+  ],
+  "kind": "UI-only simulated state; no hardware API calls"
+}

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.tools/
+target/
+dist/
+/evidence/
+/design/
+/tools/*.jpg
+*.exe
+*.obj
+*.pdb
+*.wav
+*.raw
+.env
+.env.*

@@ -1,0 +1,277 @@
+{
+  "cases": [
+    {
+      "authoritative": -20.0,
+      "control": 2,
+      "observed": -20.0,
+      "phase": 0,
+      "prior": -20.0,
+      "requested": -19.5
+    },
+    {
+      "authoritative": -35.0,
+      "control": 2,
+      "observed": -35.0,
+      "phase": 1,
+      "prior": -20.0,
+      "requested": -11.5
+    },
+    {
+      "authoritative": 50.0,
+      "control": 3,
+      "observed": 50.0,
+      "phase": 0,
+      "prior": 50.0,
+      "requested": 55.0
+    },
+    {
+      "authoritative": 65.0,
+      "control": 3,
+      "observed": 65.0,
+      "phase": 1,
+      "prior": 50.0,
+      "requested": 60.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 4,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 25.0,
+      "control": 4,
+      "observed": 25.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    },
+    {
+      "authoritative": 10.0,
+      "control": 0,
+      "observed": 10.0,
+      "phase": 0,
+      "prior": 10.0,
+      "requested": 11.0
+    },
+    {
+      "authoritative": 17.0,
+      "control": 0,
+      "observed": 17.0,
+      "phase": 1,
+      "prior": 10.0,
+      "requested": 13.0
+    },
+    {
+      "authoritative": 12.0,
+      "control": 1,
+      "observed": 12.0,
+      "phase": 0,
+      "prior": 12.0,
+      "requested": 13.0
+    },
+    {
+      "authoritative": 19.0,
+      "control": 1,
+      "observed": 19.0,
+      "phase": 1,
+      "prior": 12.0,
+      "requested": 15.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 5,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -33.0
+    },
+    {
+      "authoritative": -25.0,
+      "control": 5,
+      "observed": -25.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -6.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 6,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 30.0,
+      "control": 6,
+      "observed": 30.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 7,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -6.0
+    },
+    {
+      "authoritative": -24.0,
+      "control": 7,
+      "observed": -24.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -12.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 8,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 31.0,
+      "control": 8,
+      "observed": 31.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 9,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -6.0
+    },
+    {
+      "authoritative": -23.0,
+      "control": 9,
+      "observed": -23.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -12.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 10,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 32.0,
+      "control": 10,
+      "observed": 32.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 11,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -6.0
+    },
+    {
+      "authoritative": -22.0,
+      "control": 11,
+      "observed": -22.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -12.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 12,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 33.0,
+      "control": 12,
+      "observed": 33.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 13,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -6.0
+    },
+    {
+      "authoritative": -21.0,
+      "control": 13,
+      "observed": -21.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -12.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 14,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 34.0,
+      "control": 14,
+      "observed": 34.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 15,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": -6.0
+    },
+    {
+      "authoritative": -20.0,
+      "control": 15,
+      "observed": -20.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": -12.0
+    },
+    {
+      "authoritative": 0.0,
+      "control": 16,
+      "observed": 0.0,
+      "phase": 0,
+      "prior": 0.0,
+      "requested": 10.0
+    },
+    {
+      "authoritative": 35.0,
+      "control": 16,
+      "observed": 35.0,
+      "phase": 1,
+      "prior": 0.0,
+      "requested": 20.0
+    }
+  ],
+  "kind": "UI-only simulated state; no hardware API calls"
+}
