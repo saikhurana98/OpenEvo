@@ -3,7 +3,13 @@
 A native Rust + Slint Windows control window for Audient EVO4, with an
 EVO-inspired charcoal/green interface. Uses the installed Audient audio driver.
 
-**Version 0.3.1: adaptive, dense Orbit.** The original full console stays visible
+**Version 0.3.2: motion polish.** Buttons have eased hover/press
+feedback; inspectors slide/fade in and out; console geometry moves smoothly as
+space changes. Motion is short (60–160 ms) and respects Windows' client-area
+animation preference read at startup. Closing or covered controls cannot accept
+edits. Actual control values and hardware commands stay immediate.
+
+The existing layout is preserved from 0.3.1: adaptive, dense Orbit. The original full console stays visible
 when its controls fit. Output, monitor mix/pan, two inputs, Smartgain/stereo link
 and all six loopback fader/pan/mute strips fit both 1080 x 1217 and 1080 x 810
 physical-pixel windows at 150% scale, without scrolling. Dials, cards and spacing
@@ -23,7 +29,7 @@ for the distinction between the Orbit checks and that earlier hardware evidence.
 
 ## Run
 
-Unzip `OpenEvo-0.3.1-windows-x64.zip` and run `OpenEvo.exe`. The source-workspace
+Unzip `OpenEvo-0.3.2-windows-x64.zip` and run `OpenEvo.exe`. The source-workspace
 executable is `target/release/openevo.exe`. No Python, webview, server, account, or replacement audio
 driver is needed to run the native app. Connect exactly one EVO4.
 
@@ -95,6 +101,16 @@ The earlier Python harness and native ASIO test host remain available in the
 source workspace. See FEASIBILITY.md and tools/asio-validation.md. Restoration
 in the bounded write experiments is attempted on normal completion and Python
 exceptions; forced termination or physical disconnect can prevent restoration.
+
+To validate the new motion without a physical window or device, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/test-motion.ps1
+```
+
+The test uses an in-memory software renderer, simulated input and a mocked
+clock. It saves PNG frames and a report under evidence/motion/. Native mouse/
+keyboard interaction and a live device were not re-tested for this release.
 
 ## Evidence
 

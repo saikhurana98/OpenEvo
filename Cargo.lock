@@ -1144,18 +1144,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "openevo"
-version = "0.3.1"
-dependencies = [
- "libloading",
- "serde",
- "serde_json",
- "sha2",
- "slint",
- "slint-build",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3078,6 +3066,20 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 dependencies = [
  "critical-section",
  "portable-atomic",
+]
+
+[[package]]
+name = "openevo"
+version = "0.3.2"
+dependencies = [
+ "i-slint-backend-testing",
+ "libloading",
+ "png",
+ "serde",
+ "serde_json",
+ "sha2",
+ "slint",
+ "slint-build",
 ]
 
 [[package]]

@@ -11,6 +11,14 @@ global Theme {
     out property <color> muted: #9ca6aa;
     out property <color> green: #a7d94f;
 }
+global Motion {
+    in-out property <bool> reduced;
+    out property <duration> feedback: self.reduced ? 0ms : 100ms;
+    out property <duration> press: self.reduced ? 0ms : 60ms;
+    out property <duration> reflow: self.reduced ? 0ms : 160ms;
+    out property <duration> enter: self.reduced ? 0ms : 160ms;
+    out property <duration> exit: self.reduced ? 0ms : 70ms;
+}
 component Label inherits Text { color: Theme.muted; font-size: 11px; }
 component Heading inherits Text { color: Theme.text; font-size: 15px; font-weight: 600; }
 component Panel inherits Rectangle {
@@ -19,6 +27,56 @@ component Panel inherits Rectangle {
     border-width: 1px;
     border-color: Theme.line;
 }
+// Keep outgoing content alive through its fade. The latest requested page wins
+// even when a disclosure is clicked again before its transition has finished.
+component Inspector inherits Rectangle {
+    in property <int> page;
+    out property <int> displayed-page;
+    out property <bool> interactive: root.presented && root.page == root.displayed-page && root.page != 0;
+    private property <bool> presented;
+    private property <bool> reduced: Motion.reduced;
+    private property <float> progress: root.presented ? 1 : 0;
+    animate progress { duration: root.presented ? Motion.enter : Motion.exit; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
+    opacity: root.progress;
+    visible: root.page != 0 || root.progress > 0.001;
+    clip: true;
+    init => { root.reconcile(); }
+    changed page => { root.reconcile(); }
+    changed reduced => { root.reconcile(); }
+    function reconcile() {
+        swap.running = false;
+        if Motion.reduced {
+            root.displayed-page = root.page;
+            root.presented = root.page != 0;
+        } else {
+            root.presented = false;
+            swap.interval = root.displayed-page == 0 ? 16ms : Motion.exit;
+            swap.running = true;
+        }
+    }
+    swap := Timer {
+        interval: 16ms;
+        triggered => {
+            self.running = false;
+            root.displayed-page = root.page;
+            root.presented = root.page != 0;
+        }
+    }
+    Panel {
+        x: 0px; y: (1 - root.progress) * 6px;
+        width: root.width; height: root.height - self.y;
+        TouchArea {}
+        @children
+    }
+    // A fading inspector must never pass a click into the controls beneath it.
+    TouchArea { enabled: !root.interactive; }
+}
+component Scene inherits Rectangle {
+    private property <bool> ready;
+    opacity: self.ready || Motion.reduced ? 1 : 0;
+    animate opacity { duration: Motion.enter; easing: ease-out; }
+    Timer { interval: 16ms; running: true; triggered => { root.ready = true; self.running = false; } }
+}
 component Action inherits Rectangle {
     in property <string> text;
     in property <bool> active;
@@ -26,10 +84,17 @@ component Action inherits Rectangle {
     callback clicked;
     height: 30px;
     min-width: 30px;
-    border-radius: self.height / 2;
-    background: !root.enabled ? #24282a : root.active ? Theme.green : area.has-hover ? #363e41 : #292f32;
-    border-width: 1px;
-    border-color: focus.has-focus || (root.active && root.enabled) ? Theme.green : #424b4f;
+    private property <length> inset: area.pressed ? 1.5px : 0px;
+    animate inset { duration: Motion.press; easing: ease-out; }
+    Rectangle {
+        x: root.inset; y: root.inset;
+        width: root.width - root.inset * 2; height: root.height - root.inset * 2;
+        border-radius: self.height / 2;
+        background: !root.enabled ? #24282a : root.active ? (area.has-hover ? #b8e569 : Theme.green) : area.pressed ? #424c50 : area.has-hover ? #363e41 : #292f32;
+        border-width: 1px;
+        border-color: focus.has-focus || (root.active && root.enabled) ? Theme.green : area.has-hover ? #69787d : #424b4f;
+        animate background, border-color { duration: Motion.feedback; easing: ease-out; }
+    }
     forward-focus: focus;
     accessible-role: button;
     accessible-label: root.text;
@@ -43,8 +108,10 @@ component Action inherits Rectangle {
         }
     }
     Text {
+        y: root.inset * 0.5; height: root.height;
         text: root.text; font-size: 12px; font-weight: 600;
         color: !root.enabled ? #667074 : root.active ? #17200e : Theme.text;
+        animate color { duration: Motion.feedback; }
         horizontal-alignment: center; vertical-alignment: center;
     }
     area := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.clicked(); } }
@@ -67,7 +134,7 @@ component EvoRange inherits Rectangle {
     callback changed(float);
     private property <float> fraction: Math.clamp((value - minimum) / Math.max(0.001, maximum - minimum), 0, 1);
     private property <float> visual-fraction: root.fraction;
-    animate visual-fraction { duration: area.pressed ? 0ms : 80ms; easing: ease-out; }
+    animate visual-fraction { duration: area.pressed || Motion.reduced ? 0ms : 80ms; easing: ease-out; }
     private property <length> travel: Math.max(1px, (root.kind == 2 ? root.height : root.width) - 20px);
     private property <length> handle-center: 10px + (root.kind == 2 ? 1 - root.visual-fraction : root.visual-fraction) * root.travel;
     private property <length> diameter: Math.min(root.width, root.height);
@@ -99,7 +166,8 @@ component EvoRange inherits Rectangle {
         x: root.handle-center - 7px; y: (root.height - 14px) / 2; width: 14px; height: 14px; border-radius: 7px;
         background: root.enabled ? Theme.text : #687276;
         border-width: focus.has-focus ? 2px : 1px;
-        border-color: focus.has-focus ? Theme.green : #939d9f;
+        border-color: focus.has-focus || area.has-hover ? Theme.green : #939d9f;
+        animate border-color, background { duration: Motion.feedback; }
     }
 
     if root.kind == 2: Rectangle {
@@ -111,7 +179,8 @@ component EvoRange inherits Rectangle {
         x: (root.width - 16px) / 2; y: root.handle-center - 7px; width: 16px; height: 14px; border-radius: 7px;
         background: root.enabled ? Theme.text : #687276;
         border-width: focus.has-focus ? 2px : 1px;
-        border-color: focus.has-focus ? Theme.green : #939d9f;
+        border-color: focus.has-focus || area.has-hover ? Theme.green : #939d9f;
+        animate border-color, background { duration: Motion.feedback; }
     }
 
     if root.kind == 1: Rectangle {
@@ -128,16 +197,18 @@ component EvoRange inherits Rectangle {
             Rectangle {
                 border-radius: parent.border-radius; background: root.accent;
                 opacity: root.enabled ? Math.clamp((root.activity-ring ? root.activity * 21 : root.visual-fraction * 20 + 1) - i, 0, 1) : 0;
-                animate opacity { duration: 45ms; }
+                animate opacity { duration: Motion.reduced ? 0ms : 45ms; }
             }
         }
         Rectangle {
             x: parent.width * 0.115; y: parent.height * 0.115; width: parent.width * 0.77; height: self.width;
             border-radius: self.width / 2; background: #0d1113;
-            border-width: 1px; border-color: focus.has-focus ? Theme.green : #333c40;
+            border-width: 1px; border-color: focus.has-focus || area.has-hover ? Theme.green : #333c40;
+            animate border-color { duration: Motion.feedback; }
             Rectangle {
                 x: 3px; y: 3px; width: parent.width - 6px; height: self.width; border-radius: self.width / 2;
-                background: #2b3236;
+                background: area.pressed ? #394348 : area.has-hover ? #303a3e : #2b3236;
+                animate background { duration: Motion.feedback; }
                 border-width: 1px; border-color: #485256;
                 Rectangle {
                     width: root.diameter > 150px ? 7px : 4px; height: self.width; border-radius: self.width / 2;
@@ -195,7 +266,7 @@ component Readout inherits Text {
     in property <bool> known: true;
     in property <bool> centered;
     private property <float> displayed: root.number;
-    animate displayed { duration: 90ms; easing: ease-out; }
+    animate displayed { duration: Motion.reduced ? 0ms : 90ms; easing: ease-out; }
     text: !root.known ? "—" : root.centered && Math.abs(root.displayed) < 0.5 ? "Center" : "\{Math.round(root.displayed * 10) / 10}\{root.suffix}";
     font-family: "Consolas";
     font-size: 18px; font-weight: 600; color: Theme.text;
@@ -255,20 +326,22 @@ component InputCard inherits Panel {
     in property <bool> cap-phantom;
     in property <bool> cap-meters;
     in property <bool> pending;
+    in property <bool> interactive: true;
     callback gain-edited(float);
     callback mute-clicked;
     callback phantom-clicked;
     private property <length> dial-size: root.height < 90px ? 40px : 64px;
+    animate dial-size { duration: Motion.reflow; easing: ease-out; }
     private property <length> body-y: Math.max(28px, (root.height - root.dial-size) / 2 + 10px);
     private property <length> value-x: root.dial-size + 18px;
     private property <length> meter-x: root.value-x + 73px;
     Heading { x: 12px; y: 9px; width: 85px; height: 18px; text: "INPUT \{root.channel + 1}"; font-size: 11px; letter-spacing: 1px; }
-    Action { x: root.width - 122px; y: 6px; width: 52px; height: 25px; text: "Mute"; active: root.data.muted; enabled: root.connected && root.cap-mute; clicked => { root.mute-clicked(); } }
-    Action { x: root.width - 62px; y: 6px; width: 50px; height: 25px; text: root.pending ? "48V?" : "48V"; active: root.data.phantom || root.pending; enabled: root.connected && root.cap-phantom; clicked => { root.phantom-clicked(); } }
+    Action { x: root.width - 122px; y: 6px; width: 52px; height: 25px; text: "Mute"; active: root.data.muted; enabled: root.connected && root.cap-mute && root.interactive; clicked => { root.mute-clicked(); } }
+    Action { x: root.width - 62px; y: 6px; width: 50px; height: 25px; text: root.pending ? "48V?" : "48V"; active: root.data.phantom || root.pending; enabled: root.connected && root.cap-phantom && root.interactive; clicked => { root.phantom-clicked(); } }
     EvoRange {
         x: 10px; y: root.body-y; width: root.dial-size; height: root.dial-size; kind: 1;
         accessible-label: "Input \{root.channel + 1} gain"; value <=> root.data.gain;
-        minimum: -8; maximum: 50; step: 0.5; enabled: root.connected && root.cap-gain;
+        minimum: -8; maximum: 50; step: 0.5; enabled: root.connected && root.cap-gain && root.interactive;
         changed(v) => { root.gain-edited(v); }
     }
     Readout { x: root.value-x; y: root.body-y + 2px; width: 73px; height: root.dial-size - 16px; number: root.data.gain; known: root.connected && root.cap-gain; font-size: 18px; }
@@ -285,6 +358,8 @@ export component AppWindow inherits Window {
     default-font-family: "Segoe UI"; default-font-size: 13px;
     init => { Palette.color-scheme = ColorScheme.dark; }
     in property <bool> connected;
+    in property <bool> reduced-motion;
+    changed reduced-motion => { Motion.reduced = root.reduced-motion; }
     in property <string> device-name: "EVO 4";
     in property <string> status: "Connecting to your interface…";
     in property <bool> error;
@@ -389,7 +464,8 @@ export component AppWindow inherits Window {
             VerticalLayout { width: 70px; alignment: center; Action { height: 28px; text: "Settings"; active: root.detail-pane == 3; clicked => { root.toggle-detail(3); } } }
         }
         canvas := Rectangle {
-            if root.console-layout: console := Rectangle {
+            clip: true;
+            if root.console-layout: console := Scene {
                 width: parent.width; height: parent.height;
                 private property <bool> narrow: root.width < 620px;
                 private property <bool> mixer-fits: self.narrow ? root.height >= 790px : root.height >= 500px;
@@ -403,6 +479,7 @@ export component AppWindow inherits Window {
                 full-master := Panel {
                     x: 0px; y: 0px;
                     width: console.master-width; height: console.master-height;
+                    animate width, height { duration: Motion.reflow; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
                     private property <length> dial-size: console.narrow ? 146px : Math.min(self.width - 20px, Math.clamp(self.height - 165px, 60px, 230px));
                     private property <length> info-x: console.narrow ? 158px : 12px;
                     private property <length> info-width: self.width - self.info-x - 12px;
@@ -439,9 +516,11 @@ export component AppWindow inherits Window {
                     x: console.narrow ? 0px : console.master-width + 10px;
                     y: console.narrow ? 190px : 0px;
                     width: parent.width - self.x; height: console.input-area-height;
+                    animate x, y, width, height { duration: Motion.reflow; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
                     for input[i] in root.inputs: InputCard {
                         x: 0px; y: i * (console.input-height + 8px); width: parent.width; height: console.input-height;
-                        channel: i; data <=> input; connected: root.connected;
+                        animate y, height { duration: Motion.reflow; easing: ease-out; }
+                        channel: i; data <=> input; connected: root.connected; interactive: !inspector.visible;
                         cap-gain: root.cap-gain; cap-mute: root.cap-input-mute; cap-phantom: root.cap-phantom; cap-meters: root.cap-meters;
                         pending: root.phantom-pending == i;
                         gain-edited(v) => { root.gain-edited(i, v); }
@@ -450,22 +529,27 @@ export component AppWindow inherits Window {
                     }
                     Panel {
                         x: 0px; y: 2 * (console.input-height + 8px); width: parent.width; height: console.smart-height;
+                        animate y, height { duration: Motion.reflow; easing: ease-out; }
                         VerticalLayout {
                             padding: 8px; spacing: 5px; alignment: center;
                             HorizontalLayout {
                                 spacing: 5px;
                                 Heading { text: "Smartgain"; font-size: 13px; vertical-alignment: center; min-width: 0px; }
-                                Action { text: "1"; width: 30px; height: 26px; active: root.smart-input-1; enabled: root.connected && root.cap-smartgain && !root.smartgain-running; clicked => { root.smart-input-1 = !root.smart-input-1; } }
-                                Action { text: "2"; width: 30px; height: 26px; active: root.smart-input-2; enabled: root.connected && root.cap-smartgain && !root.smartgain-running; clicked => { root.smart-input-2 = !root.smart-input-2; } }
-                                Action { text: root.smartgain-running ? "Stop" : "Start"; width: 56px; height: 26px; active: true; enabled: root.connected && root.cap-smartgain && (root.smartgain-running || root.smart-input-1 || root.smart-input-2); clicked => { if root.smartgain-running { root.smartgain-stop(); } else { root.smartgain-start((root.smart-input-1 ? 1 : 0) + (root.smart-input-2 ? 2 : 0)); } } }
-                                Action { text: root.linked ? "Linked" : "Stereo link"; width: 82px; height: 26px; active: root.linked; enabled: root.connected && root.cap-link; clicked => { root.link-edited(!root.linked); } }
+                                Action { text: "1"; width: 30px; height: 26px; active: root.smart-input-1; enabled: (root.connected && root.cap-smartgain && !root.smartgain-running) && !inspector.visible; clicked => { root.smart-input-1 = !root.smart-input-1; } }
+                                Action { text: "2"; width: 30px; height: 26px; active: root.smart-input-2; enabled: (root.connected && root.cap-smartgain && !root.smartgain-running) && !inspector.visible; clicked => { root.smart-input-2 = !root.smart-input-2; } }
+                                Action { text: root.smartgain-running ? "Stop" : "Start"; width: 56px; height: 26px; active: true; enabled: (root.connected && root.cap-smartgain && (root.smartgain-running || root.smart-input-1 || root.smart-input-2)) && !inspector.visible; clicked => { if root.smartgain-running { root.smartgain-stop(); } else { root.smartgain-start((root.smart-input-1 ? 1 : 0) + (root.smart-input-2 ? 2 : 0)); } } }
+                                Action { text: root.linked ? "Linked" : "Stereo link"; width: 82px; height: 26px; active: root.linked; enabled: (root.connected && root.cap-link) && !inspector.visible; clicked => { root.link-edited(!root.linked); } }
                             }
                             Label { text: root.smartgain-status; overflow: elide; min-width: 0px; font-size: 10px; }
                         }
                     }
                 }
-                if console.mixer-fits: Panel {
+                mixer := Panel {
+                    opacity: console.mixer-fits ? 1 : 0;
+                    visible: console.mixer-fits || self.opacity > 0.001;
+                    animate opacity { duration: Motion.feedback; easing: ease-out; }
                     x: 0px; y: console.core-height + 10px; width: parent.width; height: console.mixer-height;
+                    animate y, height { duration: Motion.reflow; easing: ease-out; }
                     Heading { x: 12px; y: 8px; width: 115px; height: 18px; text: "Loopback mixer"; font-size: 13px; }
                     Label { x: 132px; y: 10px; width: parent.width - 144px; height: 14px; text: root.loopback-provenance; horizontal-alignment: right; overflow: elide; font-size: 9px; }
                     for source[i] in root.loopback: Rectangle {
@@ -474,23 +558,24 @@ export component AppWindow inherits Window {
                         x: 12px + Math.mod(i, self.columns) * (self.strip-width + 6px);
                         y: 32px + Math.floor(i / self.columns) * (self.height + 6px);
                         width: self.strip-width;
+                        animate x, y, width, height { duration: Motion.reflow; easing: ease-out; }
                         height: console.narrow ? (parent.height - 50px) / 2 : parent.height - 44px;
                         border-radius: 12px; border-width: 1px; border-color: #303a3e; background: #191e21;
                         Text { x: 7px; y: 6px; width: parent.width - 14px; height: 16px; text: source.name; color: Theme.text; font-size: 11px; font-weight: 600; overflow: elide; }
                         EvoRange {
                             x: 5px; y: 27px; width: 25px; height: parent.height - 34px; kind: 2;
                             accessible-label: "\{source.name} level"; value <=> source.gain; minimum: -96; maximum: 6; step: 0.5;
-                            enabled: root.connected && root.cap-loopback; changed(v) => { root.loopback-gain-edited(i, v); }
+                            enabled: root.connected && root.cap-loopback && console.mixer-fits; changed(v) => { root.loopback-gain-edited(i, v); }
                         }
                         Readout { x: 31px; y: 27px; width: parent.width - 36px; height: 15px; number: source.gain; known: root.connected && root.cap-loopback; font-size: 11px; horizontal-alignment: center; }
                         EvoRange {
                             x: 31px + (parent.width - 36px - self.width) / 2; y: 45px;
                             width: Math.min(44px, parent.height - 90px); height: self.width; kind: 1; ring: false;
                             accessible-label: "\{source.name} pan"; value <=> source.pan; minimum: -100; maximum: 100;
-                            enabled: root.connected && root.cap-loopback; changed(v) => { root.loopback-pan-edited(i, v); }
+                            enabled: root.connected && root.cap-loopback && console.mixer-fits; changed(v) => { root.loopback-pan-edited(i, v); }
                         }
                         Readout { x: 31px; y: parent.height - 42px; width: parent.width - 36px; height: 13px; number: source.pan; suffix: ""; centered: true; known: root.connected && root.cap-loopback; font-size: 9px; horizontal-alignment: center; }
-                        Action { x: 34px; y: parent.height - 25px; width: parent.width - 40px; height: 21px; text: "M"; active: source.muted; enabled: root.connected && root.cap-loopback; accessible-label: "\{source.name} mute"; clicked => { root.loopback-mute-edited(i, !source.muted); } }
+                        Action { x: 34px; y: parent.height - 25px; width: parent.width - 40px; height: 21px; text: "M"; active: source.muted; enabled: root.connected && root.cap-loopback && console.mixer-fits; accessible-label: "\{source.name} mute"; clicked => { root.loopback-mute-edited(i, !source.muted); } }
                     }
                 }
                 if !console.mixer-fits: Action {
@@ -500,29 +585,30 @@ export component AppWindow inherits Window {
                 }
                 // Only an explicitly opened inspector covers the input area.
                 // Returning to a roomy window restores the six strips automatically.
-                if root.detail-pane == 3 || (!console.mixer-fits && root.detail-pane == 2): Panel {
+                inspector := Inspector {
+                    page: root.detail-pane == 3 || (!console.mixer-fits && root.detail-pane == 2) ? root.detail-pane : 0;
                     x: input-area.x; y: input-area.y; width: input-area.width; height: input-area.height;
-                    if root.detail-pane == 3: VerticalLayout {
+                    if inspector.displayed-page == 3: VerticalLayout {
                         padding: 12px; spacing: 10px; alignment: start;
                         Heading { text: "Device settings"; }
                         Label { text: "Sample rate"; }
-                        ComboBox { model: root.rate-options; current-value: root.sample-rate; enabled: root.connected && root.cap-sample-rate; accessible-label: "Sample rate"; selected(value) => { if self.current-index >= 0 { root.sample-rate-edited(root.rate-values[self.current-index]); } } }
+                        ComboBox { model: root.rate-options; current-value: root.sample-rate; enabled: (root.connected && root.cap-sample-rate) && inspector.interactive; accessible-label: "Sample rate"; selected(value) => { if self.current-index >= 0 { root.sample-rate-edited(root.rate-values[self.current-index]); } } }
                         Label { text: "ASIO buffer"; }
-                        ComboBox { model: root.buffer-options; current-value: root.buffer-size; enabled: root.connected && root.cap-buffer-size; accessible-label: "ASIO buffer"; selected(value) => { if self.current-index >= 0 { root.buffer-size-edited(root.buffer-values[self.current-index]); } } }
+                        ComboBox { model: root.buffer-options; current-value: root.buffer-size; enabled: (root.connected && root.cap-buffer-size) && inspector.interactive; accessible-label: "ASIO buffer"; selected(value) => { if self.current-index >= 0 { root.buffer-size-edited(root.buffer-values[self.current-index]); } } }
                         Label { text: "Changes may restart audio. Driver \{root.driver-version}"; wrap: word-wrap; font-size: 10px; }
                     }
-                    if root.detail-pane == 2: VerticalLayout {
+                    if inspector.displayed-page == 2: VerticalLayout {
                         padding: 12px; spacing: 8px; alignment: start;
                         Heading { text: "Loopback mixer"; }
-                        ComboBox { model: ["Mic 1", "Mic 2", "Main L", "Main R", "Loopback L", "Loopback R"]; current-index <=> root.selected-source; accessible-label: "Loopback source"; selected(value) => { root.select-source(self.current-index); } }
-                        ValueSlider { label: "Level"; name: "\{root.loopback[root.selected-source].name} level"; suffix: " dB"; value <=> root.selected-loopback-gain; minimum: -96; maximum: 6; step: 0.5; enabled: root.connected && root.cap-loopback; edited(v) => { root.loopback[root.selected-source].gain = v; root.loopback-gain-edited(root.selected-source, v); } }
-                        ValueSlider { label: "Pan"; name: "\{root.loopback[root.selected-source].name} pan"; centered: true; value <=> root.selected-loopback-pan; minimum: -100; maximum: 100; enabled: root.connected && root.cap-loopback; edited(v) => { root.loopback[root.selected-source].pan = v; root.loopback-pan-edited(root.selected-source, v); } }
-                        Action { text: root.loopback[root.selected-source].muted ? "Muted" : "Mute"; active: root.loopback[root.selected-source].muted; enabled: root.connected && root.cap-loopback; clicked => { root.loopback-mute-edited(root.selected-source, !root.loopback[root.selected-source].muted); } }
+                        ComboBox { enabled: inspector.interactive; model: ["Mic 1", "Mic 2", "Main L", "Main R", "Loopback L", "Loopback R"]; current-index <=> root.selected-source; accessible-label: "Loopback source"; selected(value) => { root.select-source(self.current-index); } }
+                        ValueSlider { label: "Level"; name: "\{root.loopback[root.selected-source].name} level"; suffix: " dB"; value <=> root.selected-loopback-gain; minimum: -96; maximum: 6; step: 0.5; enabled: (root.connected && root.cap-loopback) && inspector.interactive; edited(v) => { root.loopback[root.selected-source].gain = v; root.loopback-gain-edited(root.selected-source, v); } }
+                        ValueSlider { label: "Pan"; name: "\{root.loopback[root.selected-source].name} pan"; centered: true; value <=> root.selected-loopback-pan; minimum: -100; maximum: 100; enabled: (root.connected && root.cap-loopback) && inspector.interactive; edited(v) => { root.loopback[root.selected-source].pan = v; root.loopback-pan-edited(root.selected-source, v); } }
+                        Action { text: root.loopback[root.selected-source].muted ? "Muted" : "Mute"; active: root.loopback[root.selected-source].muted; enabled: (root.connected && root.cap-loopback) && inspector.interactive; clicked => { root.loopback-mute-edited(root.selected-source, !root.loopback[root.selected-source].muted); } }
                         Label { text: root.loopback-provenance; wrap: word-wrap; font-size: 9px; }
                     }
                 }
             }
-            if !root.console-layout: body := Rectangle {
+            if !root.console-layout: body := Scene {
                 width: parent.width; height: parent.height;
             private property <length> input-row-height: root.stacked ? (root.compact ? 72px : 100px) : (root.compact ? 96px : 128px);
             private property <length> input-height: root.stacked ? self.input-row-height * 2 + 8px : self.input-row-height;
@@ -533,6 +619,7 @@ export component AppWindow inherits Window {
                 x: 0px; y: 0px;
                 width: root.wide && root.detail-pane == 0 ? 330px : parent.width;
                 height: body.master-height;
+                animate height { duration: Motion.reflow; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
                 private property <bool> vertical: root.wide && root.detail-pane == 0;
                 private property <length> dial-size: self.vertical ? Math.min(220px, self.height - 185px) : Math.min(Math.min(225px, self.height - 20px), self.width * 0.42);
                 EvoRange {
@@ -586,62 +673,64 @@ export component AppWindow inherits Window {
             }
             HorizontalLayout {
                 x: 0px; y: body.core-height + 8px; width: parent.width; height: 30px; spacing: 6px;
+                animate y { duration: Motion.reflow; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
                 Action { text: root.detail-pane == 4 ? "Smartgain ▾" : "Smartgain ▸"; active: root.detail-pane == 4; clicked => { root.toggle-detail(4); } }
                 Action { text: root.detail-pane == 1 ? "Monitor ▾" : "Monitor ▸"; active: root.detail-pane == 1; clicked => { root.toggle-detail(1); } }
                 Action { text: root.detail-pane == 2 ? "Loopback ▾" : "Loopback ▸"; active: root.detail-pane == 2; clicked => { root.toggle-detail(2); } }
                 Action { text: root.detail-pane == 3 ? "Device ▾" : "Device ▸"; active: root.detail-pane == 3; clicked => { root.toggle-detail(3); } }
             }
-            if root.detail-pane != 0: Panel {
+            compact-inspector := Inspector {
+                page: root.detail-pane;
                 x: 0px; y: body.core-height + 46px; width: parent.width; height: parent.height - self.y;
-                if root.detail-pane == 4: VerticalLayout {
+                if compact-inspector.displayed-page == 4: VerticalLayout {
                     padding: 12px; spacing: 10px; alignment: start;
                     HorizontalLayout {
                         spacing: 8px;
                         Heading { text: "Smartgain"; vertical-alignment: center; }
-                        Action { text: "1"; width: 36px; active: root.smart-input-1; enabled: root.connected && root.cap-smartgain && !root.smartgain-running; clicked => { root.smart-input-1 = !root.smart-input-1; } }
-                        Action { text: "2"; width: 36px; active: root.smart-input-2; enabled: root.connected && root.cap-smartgain && !root.smartgain-running; clicked => { root.smart-input-2 = !root.smart-input-2; } }
+                        Action { text: "1"; width: 36px; active: root.smart-input-1; enabled: (root.connected && root.cap-smartgain && !root.smartgain-running) && compact-inspector.interactive; clicked => { root.smart-input-1 = !root.smart-input-1; } }
+                        Action { text: "2"; width: 36px; active: root.smart-input-2; enabled: (root.connected && root.cap-smartgain && !root.smartgain-running) && compact-inspector.interactive; clicked => { root.smart-input-2 = !root.smart-input-2; } }
                         Action {
                             text: root.smartgain-running ? "Stop" : "Start"; width: 86px; active: true;
-                            enabled: root.connected && root.cap-smartgain && (root.smartgain-running || root.smart-input-1 || root.smart-input-2);
+                            enabled: (root.connected && root.cap-smartgain && (root.smartgain-running || root.smart-input-1 || root.smart-input-2)) && compact-inspector.interactive;
                             clicked => { if root.smartgain-running { root.smartgain-stop(); } else { root.smartgain-start((root.smart-input-1 ? 1 : 0) + (root.smart-input-2 ? 2 : 0)); } }
                         }
                     }
                     Label { text: root.smartgain-status; wrap: word-wrap; }
                     HorizontalLayout {
                         spacing: 10px;
-                        Action { width: 128px; text: root.linked ? "Stereo linked" : "Stereo link"; active: root.linked; enabled: root.connected && root.cap-link; clicked => { root.link-edited(!root.linked); } }
+                        Action { width: 128px; text: root.linked ? "Stereo linked" : "Stereo link"; active: root.linked; enabled: (root.connected && root.cap-link) && compact-inspector.interactive; clicked => { root.link-edited(!root.linked); } }
                         Label { text: "Link input 1 and 2 gain controls"; wrap: word-wrap; vertical-alignment: center; }
                     }
                 }
-                if root.detail-pane == 1: VerticalLayout {
+                if compact-inspector.displayed-page == 1: VerticalLayout {
                     padding: 12px; spacing: 8px; alignment: start;
                     Heading { text: "Input monitoring"; }
-                    ValueSlider { label: "Pan · L / R"; name: "Monitor pan"; centered: true; value <=> root.monitor-pan; minimum: -100; maximum: 100; enabled: root.connected && root.cap-monitor-pan; edited(v) => { root.monitor-pan-edited(v); } }
+                    ValueSlider { label: "Pan · L / R"; name: "Monitor pan"; centered: true; value <=> root.monitor-pan; minimum: -100; maximum: 100; enabled: (root.connected && root.cap-monitor-pan) && compact-inspector.interactive; edited(v) => { root.monitor-pan-edited(v); } }
                     Label { text: "Pan applies to the monitored inputs. Set the input/playback blend above."; wrap: word-wrap; font-size: 10px; }
                 }
-                if root.detail-pane == 2: VerticalLayout {
+                if compact-inspector.displayed-page == 2: VerticalLayout {
                     padding: 12px; spacing: 8px; alignment: start;
                     HorizontalLayout {
                         spacing: 8px;
                         Label { text: "Source"; width: 42px; vertical-alignment: center; }
-                        ComboBox { model: ["Mic 1", "Mic 2", "Main L", "Main R", "Loopback L", "Loopback R"]; current-index <=> root.selected-source; accessible-label: "Loopback source"; selected(value) => { root.select-source(self.current-index); } }
-                        Action { text: root.loopback[root.selected-source].muted ? "Muted" : "Mute"; width: 68px; active: root.loopback[root.selected-source].muted; enabled: root.connected && root.cap-loopback; accessible-label: "\{root.loopback[root.selected-source].name} mute"; clicked => { root.loopback-mute-edited(root.selected-source, !root.loopback[root.selected-source].muted); } }
+                        ComboBox { enabled: compact-inspector.interactive; model: ["Mic 1", "Mic 2", "Main L", "Main R", "Loopback L", "Loopback R"]; current-index <=> root.selected-source; accessible-label: "Loopback source"; selected(value) => { root.select-source(self.current-index); } }
+                        Action { text: root.loopback[root.selected-source].muted ? "Muted" : "Mute"; width: 68px; active: root.loopback[root.selected-source].muted; enabled: (root.connected && root.cap-loopback) && compact-inspector.interactive; accessible-label: "\{root.loopback[root.selected-source].name} mute"; clicked => { root.loopback-mute-edited(root.selected-source, !root.loopback[root.selected-source].muted); } }
                     }
                     HorizontalLayout {
                         spacing: 16px;
-                        ValueSlider { label: "Level"; name: "\{root.loopback[root.selected-source].name} level"; suffix: " dB"; value <=> root.selected-loopback-gain; minimum: -96; maximum: 6; step: 0.5; enabled: root.connected && root.cap-loopback; edited(v) => { root.loopback[root.selected-source].gain = v; root.loopback-gain-edited(root.selected-source, v); } }
-                        ValueSlider { label: "Pan · L / R"; name: "\{root.loopback[root.selected-source].name} pan"; centered: true; value <=> root.selected-loopback-pan; minimum: -100; maximum: 100; enabled: root.connected && root.cap-loopback; edited(v) => { root.loopback[root.selected-source].pan = v; root.loopback-pan-edited(root.selected-source, v); } }
+                        ValueSlider { label: "Level"; name: "\{root.loopback[root.selected-source].name} level"; suffix: " dB"; value <=> root.selected-loopback-gain; minimum: -96; maximum: 6; step: 0.5; enabled: (root.connected && root.cap-loopback) && compact-inspector.interactive; edited(v) => { root.loopback[root.selected-source].gain = v; root.loopback-gain-edited(root.selected-source, v); } }
+                        ValueSlider { label: "Pan · L / R"; name: "\{root.loopback[root.selected-source].name} pan"; centered: true; value <=> root.selected-loopback-pan; minimum: -100; maximum: 100; enabled: (root.connected && root.cap-loopback) && compact-inspector.interactive; edited(v) => { root.loopback[root.selected-source].pan = v; root.loopback-pan-edited(root.selected-source, v); } }
                     }
                     Label { text: root.loopback-provenance; wrap: word-wrap; font-size: 10px; }
                 }
-                if root.detail-pane == 3: VerticalLayout {
+                if compact-inspector.displayed-page == 3: VerticalLayout {
                     padding: 12px; spacing: 10px; alignment: start;
                     HorizontalLayout {
                         spacing: 10px;
                         Label { width: 82px; text: "Sample rate"; vertical-alignment: center; }
                         rate-choice := ComboBox {
                             model: root.rate-options; current-value: root.sample-rate;
-                            enabled: root.connected && root.cap-sample-rate; accessible-label: "Sample rate";
+                            enabled: (root.connected && root.cap-sample-rate) && compact-inspector.interactive; accessible-label: "Sample rate";
                             selected(value) => { if self.current-index >= 0 { root.sample-rate-edited(root.rate-values[self.current-index]); } }
                         }
                     }
@@ -650,7 +739,7 @@ export component AppWindow inherits Window {
                         Label { width: 82px; text: "ASIO buffer"; vertical-alignment: center; }
                         buffer-choice := ComboBox {
                             model: root.buffer-options; current-value: root.buffer-size;
-                            enabled: root.connected && root.cap-buffer-size; accessible-label: "ASIO buffer";
+                            enabled: (root.connected && root.cap-buffer-size) && compact-inspector.interactive; accessible-label: "ASIO buffer";
                             selected(value) => { if self.current-index >= 0 { root.buffer-size-edited(root.buffer-values[self.current-index]); } }
                         }
                     }
@@ -663,7 +752,7 @@ export component AppWindow inherits Window {
             height: 18px; spacing: 8px;
             VerticalLayout { width: 6px; alignment: center; Rectangle { width: 6px; height: 6px; border-radius: 3px; background: root.error ? #ed8575 : root.connected ? Theme.green : Theme.muted; } }
             Label { text: root.phantom-pending >= 0 ? "Click 48V? again to enable Input \{root.phantom-pending + 1}." : root.status; color: root.error ? #ed998e : root.phantom-pending >= 0 ? Theme.green : Theme.muted; font-size: 10px; overflow: elide; min-width: 0px; vertical-alignment: center; }
-            Label { width: 112px; text: "OpenEvo · v0.3.1"; font-size: 10px; horizontal-alignment: right; vertical-alignment: center; }
+            Label { width: 112px; text: "OpenEvo · v0.3.2"; font-size: 10px; horizontal-alignment: right; vertical-alignment: center; }
         }
     }
 }

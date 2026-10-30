@@ -1,0 +1,37 @@
+{
+  "actual_commands": 17,
+  "backend": "headless software; no desktop window or physical input",
+  "compact_inspectors_passed": 4,
+  "continuous_controls": 17,
+  "covered_and_exiting_controls_disabled": true,
+  "extra_animation_commands": 0,
+  "idle_decorative_animations_stopped": true,
+  "idle_pixels_stable": true,
+  "logical_sizes": [
+    [
+      1080,
+      790
+    ],
+    [
+      720,
+      790
+    ],
+    [
+      720,
+      520
+    ],
+    [
+      400,
+      790
+    ],
+    [
+      400,
+      400
+    ]
+  ],
+  "press_feedback_and_stable_hitbox": true,
+  "rapid_navigation_passed": true,
+  "readback_checks": 34,
+  "reduced_motion_passed": true,
+  "reflow_interpolates": true
+}

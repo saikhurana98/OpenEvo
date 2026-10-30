@@ -33,7 +33,7 @@ fn fit_initial_window(ui: &AppWindow) {
         }
         #[link(name = "user32")]
         unsafe extern "system" {
-            fn SystemParametersInfoW(action: u32, param: u32, data: *mut Rect, flags: u32) -> i32;
+            fn SystemParametersInfoW(action: u32, param: u32, data: *mut std::ffi::c_void, flags: u32) -> i32;
         }
         let mut work = Rect {
             left: 0,
@@ -41,7 +41,7 @@ fn fit_initial_window(ui: &AppWindow) {
             right: 0,
             bottom: 0,
         };
-        if unsafe { SystemParametersInfoW(0x30, 0, &mut work, 0) } != 0 {
+        if unsafe { SystemParametersInfoW(0x30, 0, (&mut work as *mut Rect).cast(), 0) } != 0 {
             let scale = std::env::var("SLINT_SCALE_FACTOR")
                 .ok()
                 .and_then(|v| v.parse::<f32>().ok())
@@ -239,6 +239,7 @@ pub fn run(
     snapshots: Receiver<Snapshot>,
 ) -> Result<(), slint::PlatformError> {
     let ui = AppWindow::new()?;
+    ui.set_reduced_motion(crate::motion::prefers_reduced_motion());
     ui.show()?;
     fit_initial_window(&ui);
     let fit_weak = ui.as_weak();
@@ -441,6 +442,7 @@ mod tests {
     }
     #[test]
     fn native_ui_phantom_confirmation_and_source_navigation() {
+        i_slint_backend_testing::init_no_event_loop();
         let ui = AppWindow::new().unwrap();
         let mut state = Snapshot::default();
         state.connected = true;
@@ -467,6 +469,10 @@ mod tests {
         assert_eq!(calls.get(), 1);
         assert_eq!(ui.get_phantom_confirmation_pending(), -1);
         selecting_loopback_source_is_read_only_and_tracks_authoritative_updates(&ui);
+    }
+
+    mod motion_regression {
+        include!("../tests/ui/motion.rs");
     }
     /// Run manually with native input automation. This creates only a labeled
     /// UI test window: no driver is loaded and no physical device is opened.

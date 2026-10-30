@@ -1,4 +1,4 @@
-param([string]$Version = '0.3.1')
+param([string]$Version = '0.3.2')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if ($Version -notmatch '^[0-9A-Za-z.-]+$') {throw 'Invalid package version'}
@@ -23,7 +23,7 @@ if (Test-Path -LiteralPath (Join-Path $projectRoot 'docs/images')) {
 }
 $sourceTarget = Join-Path $destination 'source'
 New-Item -ItemType Directory -Path $sourceTarget -Force | Out-Null
-foreach ($name in @('src','ui','.cargo')) {
+foreach ($name in @('src','ui','tests','.cargo')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $name) -Destination $sourceTarget -Recurse -Force
 }
 foreach ($name in @('Cargo.toml','Cargo.lock','rust-toolchain.toml','build.rs','LICENSE','README.md')) {
@@ -32,6 +32,7 @@ foreach ($name in @('Cargo.toml','Cargo.lock','rust-toolchain.toml','build.rs','
 Copy-Item -LiteralPath (Join-Path $projectRoot 'NATIVE_README.md') -Destination $sourceTarget
 New-Item -ItemType Directory -Path (Join-Path $sourceTarget 'tools') -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build.ps1') -Destination (Join-Path $sourceTarget 'tools')
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'test-motion.ps1') -Destination (Join-Path $sourceTarget 'tools')
 $manifestPath = Join-Path $destination 'SHA256SUMS.txt'
 $manifest = Get-ChildItem -LiteralPath $destination -File -Recurse -Force |
     Where-Object { $_.FullName -ne $manifestPath } | Sort-Object FullName |

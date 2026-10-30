@@ -1,3 +1,24 @@
+# OpenEvo 0.3.2 release
+
+Decorative feedback uses 60/100 ms easing, layout/entrance transitions 160 ms,
+and inspector exit 70 ms. Panel switching preserves outgoing content until
+its fade completes, always resolves the newest requested page, and disables
+covered/exiting controls. Windows client-area animation preference is read at
+startup; reduced motion skips decoration and setpoint interpolation. Audio
+meter ballistics and all driver/route/worker code remain unchanged.
+
+Motion validation uses Slint's in-memory software renderer and a mocked clock.
+No desktop window, physical input or device API is used. The headless regression
+checks all 17 continuous controls (34 rollback/readback assertions), actual
+interpolation, stable button hitboxes, rapid switch/close/reopen, overlay input
+blocking, reduced motion and five logical window sizes. Its frames and report
+are in evidence/motion/. The ordinary Rust suite is also run separately.
+
+The release passes 24 ordinary Rust tests and the offscreen motion regression.
+Its source and internal checksum manifest are checked against the packaged
+executable. Native visual review and live hardware tests were not repeated for
+this release; the earlier hardware/audio measurements below remain historical.
+
 # OpenEvo 0.3.1 public release
 
 The accepted Orbit build is published as OpenEvo. Branding, executable/package

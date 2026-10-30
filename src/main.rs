@@ -4,6 +4,7 @@ mod controller;
 mod driver;
 mod model;
 mod meters;
+mod motion;
 mod routing;
 mod ui_bridge;
 

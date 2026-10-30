@@ -23,7 +23,7 @@ Built with Rust and Slint. No webview, server, account or replacement audio driv
 ## Install
 
 1. Install the official Audient Windows driver and connect one EVO 4.
-2. Download `OpenEvo-0.3.1-windows-x64.zip` from [Releases](https://github.com/saikhurana98/OpenEvo/releases).
+2. Download `OpenEvo-0.3.2-windows-x64.zip` from [Releases](https://github.com/saikhurana98/OpenEvo/releases).
 3. Extract the ZIP and run `OpenEvo.exe`.
 
 The portable ZIP includes application source, build instructions and a SHA-256
@@ -51,12 +51,18 @@ workload and Windows SDK. The toolchain and dependency lockfile are checked in.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/build.ps1 -Configuration release -Test
-powershell -NoProfile -ExecutionPolicy Bypass -File tools/package.ps1 -Version 0.3.1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/package.ps1 -Version 0.3.2
 ```
 
 The executable is `target/release/openevo.exe`; the portable ZIP is in `dist/`.
 Automated tests run without an EVO 4. The separate interactive UI regression is
 ignored by default and uses simulated state without loading the hardware driver.
+
+Version 0.3.2 adds short panel fades/slides, responsive reflow and
+button/encoder feedback. It respects Windows' client-area animation preference
+at startup. To check motion and control readback without opening any desktop
+window, run `powershell -File tools/test-motion.ps1`. This offscreen test writes
+rendered frames and its report under `evidence/motion/`.
 
 Earlier device tests covered control readback, Smartgain, all six mixer sources,
 physical knob sync, USB reconnect and bounded ASIO/WASAPI coexistence. Those

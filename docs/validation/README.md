@@ -12,3 +12,9 @@ value. The test checks the actual UI model in both directions.
 The public OpenEvo rename changes labels and packaging only. Twenty-four regular
 Rust tests pass on the release build. See RELEASE_STATUS.md for the boundaries
 of historical hardware and audio-continuity measurements.
+
+The local 0.3.2 build also has a completely offscreen motion regression. Run
+`tools/test-motion.ps1` from the repository root. It renders the real Slint UI
+into memory with a mocked clock; it creates no desktop window and never uses
+physical input. See motion-report.json for control readback, interpolation,
+overlay protection, reduced motion, rapid switching and window-size checks.
